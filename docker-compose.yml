@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      BESCO_MODEL_PROVIDER: ${BESCO_MODEL_PROVIDER:-mock}
+      BESCO_CORS_ORIGINS: ${BESCO_CORS_ORIGINS:-http://localhost:5173}
+      BESCO_VERTEX_PROJECT_ID: ${BESCO_VERTEX_PROJECT_ID:-}
+      BESCO_VERTEX_LOCATION: ${BESCO_VERTEX_LOCATION:-us-central1}
+      BESCO_VERTEX_ENDPOINT_ID: ${BESCO_VERTEX_ENDPOINT_ID:-}
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
