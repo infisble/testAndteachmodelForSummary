@@ -31,6 +31,11 @@ class ModelConfig(BaseModel):
     project_id: str | None = None
     location: str | None = None
     endpoint_id: str | None = None
+    api_key: str | None = None
+    access_token: str | None = None
+    model_name: str | None = None
+    api_base: str | None = None
+    api_version: str | None = None
     instance_template: dict[str, Any] | None = None
     parameters_template: dict[str, Any] | None = None
 

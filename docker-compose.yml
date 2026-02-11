@@ -10,6 +10,11 @@ services:
       BESCO_VERTEX_PROJECT_ID: ${BESCO_VERTEX_PROJECT_ID:-}
       BESCO_VERTEX_LOCATION: ${BESCO_VERTEX_LOCATION:-us-central1}
       BESCO_VERTEX_ENDPOINT_ID: ${BESCO_VERTEX_ENDPOINT_ID:-}
+      BESCO_GEMINI_API_KEY: ${BESCO_GEMINI_API_KEY:-}
+      BESCO_GEMINI_ACCESS_TOKEN: ${BESCO_GEMINI_ACCESS_TOKEN:-}
+      BESCO_GEMINI_MODEL: ${BESCO_GEMINI_MODEL:-gemini-2.5-pro}
+      BESCO_GEMINI_API_BASE: ${BESCO_GEMINI_API_BASE:-https://aiplatform.googleapis.com}
+      BESCO_GEMINI_API_VERSION: ${BESCO_GEMINI_API_VERSION:-v1/publishers/google}
     ports:
       - "8000:8000"
 
@@ -19,6 +24,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+        VITE_GOOGLE_OAUTH_CLIENT_ID: ${VITE_GOOGLE_OAUTH_CLIENT_ID:-}
     restart: unless-stopped
     depends_on:
       - backend

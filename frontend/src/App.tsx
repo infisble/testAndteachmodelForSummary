@@ -1,7 +1,9 @@
-п»їimport { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { defaultPrompt } from './defaultPrompt';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const GEMINI_PROVIDER = 'gemini';
+const ALL_DAYS = '__all_days__';
 
 type Message = {
   sender?: string;
@@ -30,19 +32,41 @@ type SummaryItem = {
   provider: string;
 };
 
+function extractDay(timestamp: string): string | null {
+  const isoMatch = timestamp.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+  }
+
+  const dotMatch = timestamp.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+  if (dotMatch) {
+    return `${dotMatch[3]}-${dotMatch[2]}-${dotMatch[1]}`;
+  }
+
+  const parsed = new Date(timestamp);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+  return parsed.toISOString().slice(0, 10);
+}
+
+function formatDay(day: string): string {
+  const parsed = new Date(`${day}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    return day;
+  }
+  return parsed.toLocaleDateString('ru-RU');
+}
+
 export default function App() {
   const [dialogs, setDialogs] = useState<Dialog[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string>(ALL_DAYS);
   const [summaries, setSummaries] = useState<Record<string, SummaryItem>>({});
   const [promptText, setPromptText] = useState(() => JSON.stringify(defaultPrompt, null, 2));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const [provider, setProvider] = useState('mock');
-  const [projectId, setProjectId] = useState('');
-  const [location, setLocation] = useState('us-central1');
-  const [endpointId, setEndpointId] = useState('');
-  const [instanceTemplate, setInstanceTemplate] = useState('{"prompt": "{prompt}"}');
   const [temperature, setTemperature] = useState('0.2');
   const [maxTokens, setMaxTokens] = useState('512');
 
@@ -51,12 +75,50 @@ export default function App() {
     [dialogs, selectedId]
   );
 
+  const availableDays = useMemo(() => {
+    if (!selectedDialog) return [];
+
+    const daySet = new Set<string>();
+    for (const msg of selectedDialog.messages) {
+      const day = extractDay(msg.timestamp);
+      if (day) daySet.add(day);
+    }
+
+    return Array.from(daySet).sort();
+  }, [selectedDialog]);
+
+  useEffect(() => {
+    if (!selectedDialog) {
+      setSelectedDay(ALL_DAYS);
+      return;
+    }
+
+    if (!availableDays.length) {
+      setSelectedDay(ALL_DAYS);
+      return;
+    }
+
+    setSelectedDay((current) => {
+      if (current !== ALL_DAYS && availableDays.includes(current)) {
+        return current;
+      }
+      return availableDays[availableDays.length - 1];
+    });
+  }, [selectedDialog, availableDays]);
+
+  const filteredMessages = useMemo(() => {
+    if (!selectedDialog) return [];
+    if (selectedDay === ALL_DAYS) return selectedDialog.messages;
+
+    return selectedDialog.messages.filter((msg) => extractDay(msg.timestamp) === selectedDay);
+  }, [selectedDialog, selectedDay]);
+
   const dialogStats = useMemo(() => {
     if (!selectedDialog) return null;
-    const messageCount = selectedDialog.messages.length;
-    const lastTimestamp = selectedDialog.messages[messageCount - 1]?.timestamp || '';
+    const messageCount = filteredMessages.length;
+    const lastTimestamp = filteredMessages[messageCount - 1]?.timestamp || '';
     return { messageCount, lastTimestamp };
-  }, [selectedDialog]);
+  }, [selectedDialog, filteredMessages]);
 
   const handleFile = async (file: File) => {
     setError(null);
@@ -87,21 +149,6 @@ export default function App() {
     return parsed as PromptConfig;
   };
 
-  const buildModelConfig = () => {
-    let instanceJson: Record<string, unknown> | undefined;
-    if (instanceTemplate.trim()) {
-      instanceJson = JSON.parse(instanceTemplate);
-    }
-    const model: Record<string, unknown> = {
-      provider
-    };
-    if (projectId.trim()) model.project_id = projectId.trim();
-    if (location.trim()) model.location = location.trim();
-    if (endpointId.trim()) model.endpoint_id = endpointId.trim();
-    if (instanceJson) model.instance_template = instanceJson;
-    return model;
-  };
-
   const buildParameters = () => {
     const params: Record<string, number> = {};
     if (temperature.trim()) params.temperature = Number(temperature);
@@ -109,16 +156,21 @@ export default function App() {
     return params;
   };
 
-  const runSingle = async () => {
+  const runStart = async () => {
     if (!selectedDialog) return;
+    if (!filteredMessages.length) {
+      setError('Для выбранного дня нет сообщений.');
+      return;
+    }
+
     setError(null);
     setBusy(true);
     try {
       const payload = {
-        dialog: selectedDialog,
+        dialog: { ...selectedDialog, messages: filteredMessages },
         prompt: parsePrompt(),
         parameters: buildParameters(),
-        model: buildModelConfig()
+        model: { provider: GEMINI_PROVIDER }
       };
       const response = await fetch(`${API_BASE}/api/summarize`, {
         method: 'POST',
@@ -130,42 +182,6 @@ export default function App() {
       }
       const result = await response.json();
       setSummaries((prev) => ({ ...prev, [selectedDialog.dialog_id]: result }));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const runBatch = async () => {
-    if (!dialogs.length) return;
-    setError(null);
-    setBusy(true);
-    try {
-      const payload = {
-        dialogs,
-        prompt: parsePrompt(),
-        parameters: buildParameters(),
-        model: buildModelConfig()
-      };
-      const response = await fetch(`${API_BASE}/api/summarize-batch`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-      const result = await response.json();
-      const map: Record<string, SummaryItem> = {};
-      for (const item of result.items || []) {
-        map[item.dialog_id] = {
-          summary: item.summary,
-          latency_ms: item.latency_ms,
-          provider: item.provider
-        };
-      }
-      setSummaries(map);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -188,7 +204,7 @@ export default function App() {
           <p className="eyebrow">Context Model Evaluator</p>
           <h1>Dialog Summary Studio</h1>
           <p className="subtitle">
-            Upload dialog JSON, send it to Vertex endpoints, and review factual summaries in one place.
+            Upload dialog JSON, choose a day, and press Start. Gemini on Vertex API is used automatically.
           </p>
         </div>
         <div className="hero-actions">
@@ -200,11 +216,8 @@ export default function App() {
             />
             <span>{busy ? 'Loading...' : 'Upload JSON'}</span>
           </label>
-          <button className="primary" onClick={runSingle} disabled={busy || !selectedDialog}>
-            Run selected
-          </button>
-          <button className="ghost" onClick={runBatch} disabled={busy || !dialogs.length}>
-            Run batch
+          <button className="primary" onClick={runStart} disabled={busy || !selectedDialog || !filteredMessages.length}>
+            {busy ? 'Running...' : 'Start'}
           </button>
         </div>
       </header>
@@ -223,33 +236,21 @@ export default function App() {
         </section>
 
         <section className="panel">
-          <h2>Model</h2>
+          <h2>Run Settings</h2>
           <div className="field">
-            <label>Provider</label>
-            <select value={provider} onChange={(event) => setProvider(event.target.value)}>
-              <option value="mock">Mock</option>
-              <option value="vertex">Vertex endpoint</option>
+            <label>Day</label>
+            <select
+              value={selectedDay}
+              onChange={(event) => setSelectedDay(event.target.value)}
+              disabled={!selectedDialog}
+            >
+              <option value={ALL_DAYS}>All days</option>
+              {availableDays.map((day) => (
+                <option key={day} value={day}>
+                  {formatDay(day)}
+                </option>
+              ))}
             </select>
-          </div>
-          <div className="field">
-            <label>Project ID</label>
-            <input value={projectId} onChange={(event) => setProjectId(event.target.value)} placeholder="gcp-project" />
-          </div>
-          <div className="field">
-            <label>Location</label>
-            <input value={location} onChange={(event) => setLocation(event.target.value)} />
-          </div>
-          <div className="field">
-            <label>Endpoint ID</label>
-            <input value={endpointId} onChange={(event) => setEndpointId(event.target.value)} placeholder="123456789" />
-          </div>
-          <div className="field">
-            <label>Instance template</label>
-            <textarea
-              value={instanceTemplate}
-              onChange={(event) => setInstanceTemplate(event.target.value)}
-              spellCheck={false}
-            />
           </div>
           <div className="field-row">
             <div className="field">
@@ -300,11 +301,13 @@ export default function App() {
               <div className="conversation-meta">
                 <span>{selectedDialog.ru_name || 'RU'} / {selectedDialog.tu_name || 'TU'}</span>
                 {dialogStats && (
-                  <span>Messages: {dialogStats.messageCount} | Last: {dialogStats.lastTimestamp}</span>
+                  <span>
+                    Day: {selectedDay === ALL_DAYS ? 'All' : formatDay(selectedDay)} | Messages: {dialogStats.messageCount} | Last: {dialogStats.lastTimestamp}
+                  </span>
                 )}
               </div>
               <div className="conversation-body">
-                {selectedDialog.messages.map((msg, index) => (
+                {filteredMessages.map((msg, index) => (
                   <div key={`${msg.timestamp}-${index}`} className="bubble">
                     <div className="bubble-header">
                       <span>{msg.sender || 'UNK'}</span>
@@ -334,7 +337,7 @@ export default function App() {
               <p>{selectedSummary.summary}</p>
             </div>
           ) : (
-            <p className="placeholder">Run a summary to see results.</p>
+            <p className="placeholder">Choose day and press Start.</p>
           )}
         </section>
       </main>

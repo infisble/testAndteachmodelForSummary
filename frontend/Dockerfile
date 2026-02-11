@@ -4,6 +4,8 @@ WORKDIR /app
 
 ARG VITE_API_URL=http://localhost:8000
 ENV VITE_API_URL=${VITE_API_URL}
+ARG VITE_GOOGLE_OAUTH_CLIENT_ID=
+ENV VITE_GOOGLE_OAUTH_CLIENT_ID=${VITE_GOOGLE_OAUTH_CLIENT_ID}
 
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -19,4 +21,3 @@ COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]
-

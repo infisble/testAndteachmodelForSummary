@@ -7,6 +7,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
+from .gemini import GeminiClient
 from .models import (
     BatchSummarizeRequest,
     BatchSummarizeResponse,
@@ -30,6 +31,7 @@ app.add_middleware(
 )
 
 vertex_client = VertexClient(settings)
+gemini_client = GeminiClient(settings)
 
 
 @app.get("/api/health")
@@ -59,14 +61,17 @@ async def summarize(request: SummarizeRequest) -> SummarizeResponse:
         latency_ms = 0
         return SummarizeResponse(summary=_mock_summary(prompt), latency_ms=latency_ms, provider="mock")
 
-    if provider != "vertex":
+    if provider not in {"vertex", "gemini"}:
         raise HTTPException(status_code=400, detail=f"Unsupported provider: {provider}")
 
     overrides = _build_overrides(request)
 
     try:
-        summary, latency_ms = vertex_client.predict(prompt, overrides)
-        return SummarizeResponse(summary=summary, latency_ms=latency_ms, provider="vertex")
+        if provider == "vertex":
+            summary, latency_ms = vertex_client.predict(prompt, overrides)
+        else:
+            summary, latency_ms = gemini_client.generate(prompt, overrides)
+        return SummarizeResponse(summary=summary, latency_ms=latency_ms, provider=provider)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
@@ -86,6 +91,8 @@ async def summarize_batch(request: BatchSummarizeRequest) -> BatchSummarizeRespo
             latency_ms = 0
         elif provider == "vertex":
             summary, latency_ms = vertex_client.predict(prompt, overrides)
+        elif provider == "gemini":
+            summary, latency_ms = gemini_client.generate(prompt, overrides)
         else:
             raise HTTPException(status_code=400, detail=f"Unsupported provider: {provider}")
 
@@ -111,6 +118,16 @@ def _build_overrides(request: SummarizeRequest | BatchSummarizeRequest) -> dict[
     overrides: dict[str, Any] = {}
 
     if request.model:
+        if request.model.api_key:
+            overrides["api_key"] = request.model.api_key
+        if request.model.access_token:
+            overrides["access_token"] = request.model.access_token
+        if request.model.model_name:
+            overrides["model_name"] = request.model.model_name
+        if request.model.api_base:
+            overrides["api_base"] = request.model.api_base
+        if request.model.api_version:
+            overrides["api_version"] = request.model.api_version
         if request.model.project_id:
             overrides["project_id"] = request.model.project_id
         if request.model.location:
