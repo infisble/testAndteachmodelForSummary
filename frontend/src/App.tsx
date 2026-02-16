@@ -1,9 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+ï»¿import { useEffect, useMemo, useState } from 'react';
 import { defaultPrompt } from './defaultPrompt';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const GEMINI_PROVIDER = 'gemini';
+const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 const ALL_DAYS = '__all_days__';
+const MODEL_OPTIONS = [
+  { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+  { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite' }
+] as const;
 
 type Message = {
   sender?: string;
@@ -30,6 +36,7 @@ type SummaryItem = {
   summary: string;
   latency_ms: number;
   provider: string;
+  model_name: string;
 };
 
 function extractDay(timestamp: string): string | null {
@@ -69,6 +76,7 @@ export default function App() {
 
   const [temperature, setTemperature] = useState('0.2');
   const [maxTokens, setMaxTokens] = useState('512');
+  const [selectedModelName, setSelectedModelName] = useState<string>(DEFAULT_GEMINI_MODEL);
 
   const selectedDialog = useMemo(
     () => dialogs.find((dialog) => dialog.dialog_id === selectedId) || null,
@@ -159,7 +167,7 @@ export default function App() {
   const runStart = async () => {
     if (!selectedDialog) return;
     if (!filteredMessages.length) {
-      setError('Äëÿ âûáðàííîãî äíÿ íåò ñîîáùåíèé.');
+      setError('Ð”Ð»Ñ Ð²Ñ‹Ð±Ñ€Ð°Ð½Ð½Ð¾Ð³Ð¾ Ð´Ð½Ñ Ð½ÐµÑ‚ ÑÐ¾Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ð¹.');
       return;
     }
 
@@ -170,7 +178,7 @@ export default function App() {
         dialog: { ...selectedDialog, messages: filteredMessages },
         prompt: parsePrompt(),
         parameters: buildParameters(),
-        model: { provider: GEMINI_PROVIDER }
+        model: { provider: GEMINI_PROVIDER, model_name: selectedModelName }
       };
       const response = await fetch(`${API_BASE}/api/summarize`, {
         method: 'POST',
@@ -181,7 +189,13 @@ export default function App() {
         throw new Error(await response.text());
       }
       const result = await response.json();
-      setSummaries((prev) => ({ ...prev, [selectedDialog.dialog_id]: result }));
+      setSummaries((prev) => ({
+        ...prev,
+        [selectedDialog.dialog_id]: {
+          ...result,
+          model_name: selectedModelName
+        }
+      }));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -203,9 +217,7 @@ export default function App() {
         <div>
           <p className="eyebrow">Context Model Evaluator</p>
           <h1>Dialog Summary Studio</h1>
-          <p className="subtitle">
-            Upload dialog JSON, choose a day, and press Start. Gemini on Vertex API is used automatically.
-          </p>
+          <p className="subtitle">Upload dialog JSON, choose a day and model, then press Start.</p>
         </div>
         <div className="hero-actions">
           <label className="file-input">
@@ -248,6 +260,16 @@ export default function App() {
               {availableDays.map((day) => (
                 <option key={day} value={day}>
                   {formatDay(day)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label>Model</label>
+            <select value={selectedModelName} onChange={(event) => setSelectedModelName(event.target.value)}>
+              {MODEL_OPTIONS.map((model) => (
+                <option key={model.value} value={model.value}>
+                  {model.label}
                 </option>
               ))}
             </select>
@@ -329,6 +351,7 @@ export default function App() {
             <div className="summary">
               <div className="summary-meta">
                 <span>Provider: {selectedSummary.provider}</span>
+                <span>Model: {selectedSummary.model_name}</span>
                 <span>Latency: {selectedSummary.latency_ms} ms</span>
                 {summaryStats && (
                   <span>Words: {summaryStats.wordCount} | Chars: {summaryStats.charCount}</span>
