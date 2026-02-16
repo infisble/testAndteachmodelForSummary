@@ -2,7 +2,6 @@
 import { defaultPrompt } from './defaultPrompt';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-const GEMINI_PROVIDER = 'gemini';
 const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 const ALL_DAYS = '__all_days__';
 const MODEL_OPTIONS = [
@@ -178,7 +177,7 @@ export default function App() {
         dialog: { ...selectedDialog, messages: filteredMessages },
         prompt: parsePrompt(),
         parameters: buildParameters(),
-        model: { provider: GEMINI_PROVIDER, model_name: selectedModelName }
+        model: { model_name: selectedModelName }
       };
       const response = await fetch(`${API_BASE}/api/summarize`, {
         method: 'POST',

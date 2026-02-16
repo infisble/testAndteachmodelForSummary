@@ -1,11 +1,11 @@
 from __future__ import annotations
-
 import time
 from typing import Any
-
 import requests
-
 from .config import Settings
+from .logging_utils import get_logger, to_log_json
+
+logger = get_logger("app.gemini")
 
 
 class GeminiClient:
@@ -39,12 +39,25 @@ class GeminiClient:
         elif config.api_key:
             query_params["key"] = config.api_key
 
+        logger.info(
+            "GEMINI REQUEST url=%s params=%s headers=%s payload=%s",
+            url,
+            to_log_json(query_params),
+            to_log_json(headers),
+            to_log_json(payload),
+        )
+
         response = requests.post(
             url,
             params=query_params,
             headers=headers,
             json=payload,
             timeout=self.settings.request_timeout_sec,
+        )
+        logger.info(
+            "GEMINI RESPONSE status=%s body=%s",
+            response.status_code,
+            to_log_json(_response_body(response)),
         )
         if not response.ok:
             raise RuntimeError(_format_error(response))
@@ -108,6 +121,13 @@ def _format_error(response: requests.Response) -> str:
     else:
         message = str(error)
     return f"Gemini request failed ({response.status_code}): {message}"
+
+
+def _response_body(response: requests.Response) -> Any:
+    try:
+        return response.json()
+    except ValueError:
+        return {"text": response.text}
 
 
 class _ResolvedGeminiConfig:
