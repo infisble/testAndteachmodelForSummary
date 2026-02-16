@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     vertex_location: str = "us-central1"
     vertex_endpoint_id: str | None = None
     vertex_instance_template: str = '{"prompt": "{prompt}"}'
-    vertex_parameters_template: str = '{"temperature": 0.2, "maxOutputTokens": 512}'
+    vertex_parameters_template: str = '{"temperature": 0.2, "maxOutputTokens": 5512}'
 
     gemini_api_key: str | None = None
     gemini_access_token: str | None = None
