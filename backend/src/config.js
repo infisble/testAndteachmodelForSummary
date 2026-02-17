@@ -38,7 +38,7 @@ const settings = {
   geminiApiVersion: readEnv("BESCO_GEMINI_API_VERSION", "v1/publishers/google"),
   requestTimeoutSec: Number(readEnv("BESCO_REQUEST_TIMEOUT_SEC", "60")) || 60,
   corsOrigins: readEnv("BESCO_CORS_ORIGINS", "http://localhost:5173"),
-  mockReply: readEnv("BESCO_MOCK_REPLY", "Routine exchange")
+  mockReply: readEnv("BESCO_MOCK_REPLY", "Mock summary")
 };
 
 module.exports = {

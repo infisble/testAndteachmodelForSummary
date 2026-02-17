@@ -1,13 +1,23 @@
 "use strict";
 
 function extractTimestampAndText(message) {
-  for (const [key, value] of Object.entries(message)) {
-    if (key === "from" || key === "sender") {
-      continue;
+  const timestampFields = ["timestamp", "date", "datetime", "time", "created_at", "createdAt", "ts"];
+  for (const field of timestampFields) {
+    if (message[field] !== undefined && message[field] !== null) {
+      const ts = String(message[field]).trim();
+      if (ts) {
+        return [ts, extractText(message)];
+      }
     }
-    return [key, String(value)];
   }
-  return ["", String(message.text || message.message || "")];
+
+  for (const [key, value] of Object.entries(message)) {
+    if (!isSenderField(key) && isTimestampKey(key)) {
+      return [key, stringifyText(value)];
+    }
+  }
+
+  return ["", extractText(message)];
 }
 
 function safeInt(value) {
@@ -30,6 +40,80 @@ function buildDialogId(ruId, tuId, index) {
   return String(index);
 }
 
+function extractText(message) {
+  const primaryTextFields = ["text", "message", "content", "body", "caption"];
+  for (const field of primaryTextFields) {
+    if (message[field] !== undefined && message[field] !== null) {
+      const text = stringifyText(message[field]).trim();
+      if (text) {
+        return text;
+      }
+    }
+  }
+
+  for (const [key, value] of Object.entries(message)) {
+    if (isSenderField(key) || isMetaField(key) || isTimestampKey(key)) {
+      continue;
+    }
+    const text = stringifyText(value).trim();
+    if (text) {
+      return text;
+    }
+  }
+
+  return "";
+}
+
+function stringifyText(value) {
+  if (value === undefined || value === null) {
+    return "";
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => stringifyText(item)).join("");
+  }
+  if (typeof value === "object") {
+    if (typeof value.text === "string") {
+      return value.text;
+    }
+    if (Array.isArray(value.text)) {
+      return stringifyText(value.text);
+    }
+    return Object.values(value)
+      .map((item) => stringifyText(item))
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+  }
+  return String(value);
+}
+
+function isSenderField(key) {
+  const normalized = String(key).toLowerCase();
+  return normalized === "from" || normalized === "sender" || normalized === "from_id" || normalized === "author";
+}
+
+function isMetaField(key) {
+  const normalized = String(key).toLowerCase();
+  return normalized === "id" || normalized === "type" || normalized === "date_unixtime";
+}
+
+function isTimestampKey(key) {
+  const value = String(key).trim();
+  if (!value) {
+    return false;
+  }
+  return (
+    /^\d{4}-\d{2}-\d{2}(?:[ t]\d{2}:\d{2}(?::\d{2})?)?$/i.test(value) ||
+    /^\d{2}\.\d{2}\.\d{4}(?:[ t]\d{2}:\d{2}(?::\d{2})?)?$/.test(value)
+  );
+}
+
 function convertDialog(raw, index) {
   const context = raw.context || {};
   const ru = context.RU || {};
@@ -44,8 +128,11 @@ function convertDialog(raw, index) {
     if (!item || typeof item !== "object" || Array.isArray(item)) {
       continue;
     }
-    const sender = item.from || item.sender || null;
+    const sender = safeStr(item.from || item.sender || item.from_id || item.author);
     const [timestamp, text] = extractTimestampAndText(item);
+    if (!text.trim()) {
+      continue;
+    }
     messages.push({
       sender,
       timestamp,

@@ -24,12 +24,6 @@ class GeminiClient {
     if (config.parameters) {
       payload.generationConfig = config.parameters;
     }
-    if (!payload.generationConfig) {
-      payload.generationConfig = {};
-    }
-    if (payload.generationConfig.thinkingConfig === undefined) {
-      payload.generationConfig.thinkingConfig = { thinkingBudget: 0 };
-    }
 
     const headers = {};
     const queryParams = new URLSearchParams();

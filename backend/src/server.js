@@ -164,10 +164,7 @@ app.listen(port, () => {
   console.info("%s running on port %s", settings.appName, port);
 });
 
-function mockSummary(prompt) {
-  if (prompt.includes("Routine exchange")) {
-    return "Routine exchange";
-  }
+function mockSummary(_prompt) {
   return settings.mockReply;
 }
 
