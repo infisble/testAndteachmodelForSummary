@@ -1,0 +1,68 @@
+{
+  "health": {
+    "status": "ok",
+    "provider": "gemini"
+  },
+  "totalDialogs": 7,
+  "success": 4,
+  "failed": 3,
+  "results": [
+    {
+      "index": 0,
+      "date": "2026-02-17",
+      "dialog_id": "ai_notes_126820315_140678702_2026-02-17",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 17198,
+      "summary": "RU and TU exchanged intimate messages throughout the day, with TU expressing her enjoyment of their previous night and her desire for RU. While TU was at work, RU guided her through a session"
+    },
+    {
+      "index": 1,
+      "date": "2026-02-19",
+      "dialog_id": "ai_notes_33205326_139167427_2026-02-19",
+      "status": 500,
+      "error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)"
+    },
+    {
+      "index": 2,
+      "date": "2026-02-19",
+      "dialog_id": "ai_notes_126820315_140678702_2026-02-19",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 6399,
+      "summary": "RU and TU exchanged affectionate greetings, with TU expressing a desire for intimacy and deeper conversation, while RU mentioned he was having breakfast and working on his laptop, encountering issues with software licenses."
+    },
+    {
+      "index": 3,
+      "date": "2026-02-20",
+      "dialog_id": "ai_notes_58952496_142756584_2026-02-20",
+      "status": 500,
+      "error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)"
+    },
+    {
+      "index": 4,
+      "date": "2026-02-21",
+      "dialog_id": "ai_notes_99906416_150420471_2026-02-21",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 1562,
+      "summary": "The provided dialogue consists solely of deleted messages from RU, with no discernible content from either participant."
+    },
+    {
+      "index": 5,
+      "date": "2026-02-22",
+      "dialog_id": "ai_notes_65906690_150830854_2026-02-22",
+      "status": 500,
+      "error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)"
+    },
+    {
+      "index": 6,
+      "date": "2026-02-23",
+      "dialog_id": "ai_notes_145606553_151033530_2026-02-23",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 3933,
+      "summary": "RU and TU discuss their relationship, with RU expressing a desire for a full-time relationship despite being 64 years old, and TU confirming interest in a serious relationship. RU shares their birth date and expresses a wish to live with TU, praising TU's physical appearance. RU also communicates specific expectations regarding TU's attire at home, to which TU responds positively before requesting a media file from RU."
+    }
+  ]
+}

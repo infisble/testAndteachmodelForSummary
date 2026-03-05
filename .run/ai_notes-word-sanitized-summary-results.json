@@ -1,0 +1,82 @@
+{
+  "health": {
+    "status": "ok",
+    "provider": "gemini"
+  },
+  "totalDialogs": 7,
+  "success": 4,
+  "failed": 3,
+  "results": [
+    {
+      "index": 0,
+      "date": "2026-02-17",
+      "ladyId": "126820315",
+      "manId": "140678702",
+      "dialog_id": "ai_notes_126820315_140678702_2026-02-17",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 15843,
+      "summary": "TU initiated the conversation by expressing strong desire and recalling a previous intimate encounter, suggesting a quick session at work before a longer one at home. RU was initially busy with a laptop but later agreed to guide TU through a self-stimulation session while TU was at work. TU prepared in a back room, removing clothing and using a red ball as instructed by RU. RU provided detailed verbal guidance, directing TU to use fingers and the red ball, focusing on various intimate areas and sensations. TU described her increasing arousal and physical responses, eventually reaching climax with RU's continued instructions, despite RU's phone battery running low. Afterward, TU expressed intense pleasure and gratitude, and they discussed future intimate activities, including the use of a silicone toy and a larger ball, before RU had to attend to a bank matter."
+    },
+    {
+      "index": 1,
+      "date": "2026-02-19",
+      "ladyId": "33205326",
+      "manId": "139167427",
+      "dialog_id": "ai_notes_33205326_139167427_2026-02-19",
+      "status": 500,
+      "error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)"
+    },
+    {
+      "index": 2,
+      "date": "2026-02-19",
+      "ladyId": "126820315",
+      "manId": "140678702",
+      "dialog_id": "ai_notes_126820315_140678702_2026-02-19",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 6186,
+      "summary": "The dialogue begins with morning greetings and expressions of affection, including desires for intimacy and spending time together, with RU mentioning work-related delays. TU expresses a strong interest in learning about RU's past"
+    },
+    {
+      "index": 3,
+      "date": "2026-02-20",
+      "ladyId": "58952496",
+      "manId": "142756584",
+      "dialog_id": "ai_notes_58952496_142756584_2026-02-20",
+      "status": 500,
+      "error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)"
+    },
+    {
+      "index": 4,
+      "date": "2026-02-21",
+      "ladyId": "99906416",
+      "manId": "150420471",
+      "dialog_id": "ai_notes_99906416_150420471_2026-02-21",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 1278,
+      "summary": "RU sent multiple messages, all of which were subsequently deleted."
+    },
+    {
+      "index": 5,
+      "date": "2026-02-22",
+      "ladyId": "65906690",
+      "manId": "150830854",
+      "dialog_id": "ai_notes_65906690_150830854_2026-02-22",
+      "status": 500,
+      "error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)"
+    },
+    {
+      "index": 6,
+      "date": "2026-02-23",
+      "ladyId": "145606553",
+      "manId": "151033530",
+      "dialog_id": "ai_notes_145606553_151033530_2026-02-23",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 5869,
+      "summary": "TU initiated a conversation with RU, who offered a private email address but agreed to continue on the current platform after expressing concern about losing TU. RU then inquired about a full-time relationship,"
+    }
+  ]
+}

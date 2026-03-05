@@ -36,6 +36,10 @@ const settings = {
   geminiModel: readEnv("BESCO_GEMINI_MODEL", "gemini-2.5-pro"),
   geminiApiBase: readEnv("BESCO_GEMINI_API_BASE", "https://aiplatform.googleapis.com"),
   geminiApiVersion: readEnv("BESCO_GEMINI_API_VERSION", "v1/publishers/google"),
+  geminiRetryMaxAttempts: Number(readEnv("BESCO_GEMINI_RETRY_MAX_ATTEMPTS", "3")) || 3,
+  geminiRetryBaseDelayMs: Number(readEnv("BESCO_GEMINI_RETRY_BASE_DELAY_MS", "1500")) || 1500,
+  geminiRetryMaxDelayMs: Number(readEnv("BESCO_GEMINI_RETRY_MAX_DELAY_MS", "12000")) || 12000,
+  geminiPromptCharBudgets: readEnv("BESCO_GEMINI_PROMPT_CHAR_BUDGETS", "38000,24000,16000"),
   requestTimeoutSec: Number(readEnv("BESCO_REQUEST_TIMEOUT_SEC", "60")) || 60,
   corsOrigins: readEnv("BESCO_CORS_ORIGINS", "http://localhost:5173"),
   mockReply: readEnv("BESCO_MOCK_REPLY", "Mock summary")

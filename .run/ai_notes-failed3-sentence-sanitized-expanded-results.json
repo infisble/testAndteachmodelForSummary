@@ -1,0 +1,57 @@
+{
+  "health": {
+    "status": "ok",
+    "provider": "gemini"
+  },
+  "totalDialogs": 3,
+  "success": 1,
+  "failed": 2,
+  "sanitizeStats": [
+    {
+      "index": 1,
+      "date": "2026-02-19",
+      "totalMessages": 262,
+      "changedMessages": 87,
+      "replacedSentences": 87
+    },
+    {
+      "index": 3,
+      "date": "2026-02-20",
+      "totalMessages": 133,
+      "changedMessages": 14,
+      "replacedSentences": 19
+    },
+    {
+      "index": 5,
+      "date": "2026-02-22",
+      "totalMessages": 86,
+      "changedMessages": 33,
+      "replacedSentences": 41
+    }
+  ],
+  "results": [
+    {
+      "index": 1,
+      "date": "2026-02-19",
+      "dialog_id": "ai_notes_33205326_139167427_2026-02-19",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 17649,
+      "summary": "RU and TU exchange numerous declarations of love and affection, expressing deep emotional connection and happiness with each other. Their conversation frequently delves into detailed sexual fantasies and intimate desires, describing physical arousal and"
+    },
+    {
+      "index": 3,
+      "date": "2026-02-20",
+      "dialog_id": "ai_notes_58952496_142756584_2026-02-20",
+      "status": 500,
+      "error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)"
+    },
+    {
+      "index": 5,
+      "date": "2026-02-22",
+      "dialog_id": "ai_notes_65906690_150830854_2026-02-22",
+      "status": 500,
+      "error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)"
+    }
+  ]
+}

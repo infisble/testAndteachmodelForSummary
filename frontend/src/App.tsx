@@ -7,7 +7,8 @@ const ALL_DAYS = '__all_days__';
 const MODEL_OPTIONS = [
   { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
   { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
-  { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite' }
+  { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite' },
+  { value: 'flashlight', label: 'Gemini 2.5 Flashlight (alias)' }
 ] as const;
 
 type Message = {

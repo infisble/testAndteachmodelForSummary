@@ -1,0 +1,70 @@
+{
+  "health": {
+    "status": "ok",
+    "provider": "gemini"
+  },
+  "totalDialogs": 7,
+  "success": 5,
+  "failed": 2,
+  "results": [
+    {
+      "index": 0,
+      "date": "2026-02-17",
+      "dialog_id": "ai_notes_126820315_140678702_2026-02-17",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 17444,
+      "summary": "The dialogue begins with morning greetings and flirtatious exchanges between RU and TU, who discuss a letter TU sent and RU's plans to collect a laptop. TU expresses a desire for intimate time together,"
+    },
+    {
+      "index": 1,
+      "date": "2026-02-19",
+      "dialog_id": "ai_notes_33205326_139167427_2026-02-19",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 7894,
+      "summary": "The dialogue between RU and TU details their romantic and intimate relationship, characterized by mutual expressions of deep affection and desire. RU promises happiness and care, extending to TU's daughter, while TU reciprocates, stating RU's words melt her and make her happy. Their conversations frequently involve explicit fantasies and desires,"
+    },
+    {
+      "index": 2,
+      "date": "2026-02-19",
+      "dialog_id": "ai_notes_126820315_140678702_2026-02-19",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 6876,
+      "summary": "RU and TU exchanged morning greetings, with TU expressing a desire for physical closeness and deeper conversation, asking about RU's day and past experiences. RU reciprocated the desire for intimacy, mentioned being"
+    },
+    {
+      "index": 3,
+      "date": "2026-02-20",
+      "dialog_id": "ai_notes_58952496_142756584_2026-02-20",
+      "status": 500,
+      "error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)"
+    },
+    {
+      "index": 4,
+      "date": "2026-02-21",
+      "dialog_id": "ai_notes_99906416_150420471_2026-02-21",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 1591,
+      "summary": "RU sent multiple messages, all of which were subsequently deleted."
+    },
+    {
+      "index": 5,
+      "date": "2026-02-22",
+      "dialog_id": "ai_notes_65906690_150830854_2026-02-22",
+      "status": 500,
+      "error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)"
+    },
+    {
+      "index": 6,
+      "date": "2026-02-23",
+      "dialog_id": "ai_notes_145606553_151033530_2026-02-23",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 3708,
+      "summary": "RU and TU discuss their relationship, with RU expressing concern about losing TU due to expired credit and suggesting a full-time relationship despite a potential age difference. TU confirms interest in a serious relationship. RU reveals their age as 64 and expresses a desire to live with TU, praising TU's body. TU reciprocates affection. RU then outlines expectations for TU's attire, including wearing \"littlest micro mini dress and skirts\" and being naked at home, to which TU responds positively and requests a picture of RU."
+    }
+  ]
+}

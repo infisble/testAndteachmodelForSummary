@@ -1,0 +1,70 @@
+{
+  "health": {
+    "status": "ok",
+    "provider": "gemini"
+  },
+  "totalDialogs": 7,
+  "success": 5,
+  "failed": 2,
+  "results": [
+    {
+      "index": 0,
+      "date": "2026-02-17",
+      "dialog_id": "ai_notes_126820315_140678702_2026-02-17",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 16792,
+      "summary": "The dialogue begins with TU expressing desire and recalling a past intimate experience with RU. They discuss the possibility of meeting earlier, but RU is occupied with a laptop repair. While TU is at work, they engage in a remote intimate session where RU provides instructions for TU's self-stimulation, involving fingers and a \"red ball.\" TU describes her sensations and eventually reaches climax. Following this, they discuss future intimate plans, including the use of a \"silicone banana\" and meeting in person. The conversation concludes with RU needing to attend to bank matters, and TU heading home, anticipating their next encounter."
+    },
+    {
+      "index": 1,
+      "date": "2026-02-19",
+      "dialog_id": "ai_notes_33205326_139167427_2026-02-19",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 6811,
+      "summary": "RU and TU exchange numerous intimate messages, expressing deep affection, love, and happiness with each other. They discuss their strong physical desires, sharing detailed sexual fantasies, and TU sends explicit photos. RU expresses concern"
+    },
+    {
+      "index": 2,
+      "date": "2026-02-19",
+      "dialog_id": "ai_notes_126820315_140678702_2026-02-19",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 5522,
+      "summary": "The dialogue begins with TU expressing affection and a desire for intimacy and deeper conversation, asking RU about his day and past. RU mentions working on his laptop and having issues with software licenses, then agrees to share his life story. TU emphasizes the importance of communication and friendship, revealing her childhood dream of becoming a journalist. RU recounts his early life, including his schooling in London, a serious illness and surgery, travels to Greece and working on a kibbutz in Israel, and his subsequent international career in telecommunications. TU shares memories of an influential teacher and her own trip to Greece, expressing admiration for RU's resilience. RU further details his"
+    },
+    {
+      "index": 3,
+      "date": "2026-02-20",
+      "dialog_id": "ai_notes_58952496_142756584_2026-02-20",
+      "status": 500,
+      "error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)"
+    },
+    {
+      "index": 4,
+      "date": "2026-02-21",
+      "dialog_id": "ai_notes_99906416_150420471_2026-02-21",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 1577,
+      "summary": "RU sent multiple messages, all of which were subsequently deleted."
+    },
+    {
+      "index": 5,
+      "date": "2026-02-22",
+      "dialog_id": "ai_notes_65906690_150830854_2026-02-22",
+      "status": 500,
+      "error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)"
+    },
+    {
+      "index": 6,
+      "date": "2026-02-23",
+      "dialog_id": "ai_notes_145606553_151033530_2026-02-23",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 5983,
+      "summary": "RU and TU discuss their connection, with RU providing a private email and expressing a desire not to lose TU due to expired credit. TU seeks to know RU better, asking about their background. RU states they are 64 years old, born January "
+    }
+  ]
+}

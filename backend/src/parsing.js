@@ -95,7 +95,13 @@ function stringifyText(value) {
 
 function isSenderField(key) {
   const normalized = String(key).toLowerCase();
-  return normalized === "from" || normalized === "sender" || normalized === "from_id" || normalized === "author";
+  return (
+    normalized === "from" ||
+    normalized === "sender" ||
+    normalized === "from_id" ||
+    normalized === "author" ||
+    normalized === "initiator"
+  );
 }
 
 function isMetaField(key) {
@@ -128,7 +134,7 @@ function convertDialog(raw, index) {
     if (!item || typeof item !== "object" || Array.isArray(item)) {
       continue;
     }
-    const sender = safeStr(item.from || item.sender || item.from_id || item.author);
+    const sender = safeStr(item.from || item.sender || item.from_id || item.author || item.initiator);
     const [timestamp, text] = extractTimestampAndText(item);
     if (!text.trim()) {
       continue;
@@ -150,6 +156,28 @@ function convertDialog(raw, index) {
   };
 }
 
+function isMessageLike(item) {
+  if (!item || typeof item !== "object" || Array.isArray(item)) {
+    return false;
+  }
+
+  if (Array.isArray(item.messages)) {
+    return false;
+  }
+
+  const keys = Object.keys(item);
+  if (!keys.length) {
+    return false;
+  }
+
+  const hasTimestamp = keys.some((key) => isTimestampKey(key)) ||
+    ["timestamp", "date", "datetime", "time", "created_at", "createdAt", "ts"].some((key) => item[key] !== undefined && item[key] !== null);
+  const hasText = ["text", "message", "content", "body", "caption"].some((key) => item[key] !== undefined && item[key] !== null);
+  const hasSender = ["from", "sender", "from_id", "author", "initiator"].some((key) => item[key] !== undefined && item[key] !== null);
+
+  return hasTimestamp && (hasText || hasSender);
+}
+
 function loadDialogs(payload) {
   if (payload && typeof payload === "object" && !Array.isArray(payload)) {
     if (Object.hasOwn(payload, "messages")) {
@@ -164,7 +192,11 @@ function loadDialogs(payload) {
   }
 
   if (Array.isArray(payload)) {
-    return payload.filter((item) => item && typeof item === "object" && !Array.isArray(item)).map(convertDialog);
+    const objects = payload.filter((item) => item && typeof item === "object" && !Array.isArray(item));
+    if (objects.length && objects.every((item) => isMessageLike(item))) {
+      return [convertDialog({ messages: objects }, 0)];
+    }
+    return objects.map(convertDialog);
   }
 
   throw new Error("Unsupported JSON format: expected a dialog object or list of dialogs");

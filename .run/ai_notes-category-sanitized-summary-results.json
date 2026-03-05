@@ -1,0 +1,68 @@
+{
+  "health": {
+    "status": "ok",
+    "provider": "gemini"
+  },
+  "totalDialogs": 7,
+  "success": 4,
+  "failed": 3,
+  "results": [
+    {
+      "index": 0,
+      "date": "2026-02-17",
+      "dialog_id": "ai_notes_126820315_140678702_2026-02-17",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 16847,
+      "summary": "RU and TU exchanged morning greetings and intimate messages, with TU recalling a previous night and expressing desire. RU suggested TU leave work early for a sexual encounter, but RU's need to collect a laptop prevented an immediate meeting. TU then proposed a remote, guided intimate session while she was at work, which RU agreed to. TU went to a private back room, removed her underwear, and followed RU's verbal instructions for self-stimulation, using her fingers and a \"red ball.\" TU described her sensations and actions as she progressed, eventually reaching orgasm under RU's guidance. Afterward, they discussed the intensity of the experience, future intimate plans involving toys, and general topics like the weather and TU's location, before RU had to attend to a bank matter."
+    },
+    {
+      "index": 1,
+      "date": "2026-02-19",
+      "dialog_id": "ai_notes_33205326_139167427_2026-02-19",
+      "status": 500,
+      "error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)"
+    },
+    {
+      "index": 2,
+      "date": "2026-02-19",
+      "dialog_id": "ai_notes_126820315_140678702_2026-02-19",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 6897,
+      "summary": "RU and TU exchange morning greetings, expressing affection and a desire for intimate connection, with RU mentioning he is busy with work. TU expresses a wish to talk more and learn about RU's past, prompting RU to share details about his childhood in London and Essex, his experiences with English teachers, and his early interest in writing, including composing a haiku and a novel. He then recounts a serious illness requiring neurosurgery, followed by travels to Greece, Cyprus, and a kibbutz in Israel, where he worked various jobs and had a romantic relationship with an Israeli girl. TU shares her childhood dream of becoming a journalist and reflects on the impact of inspiring teachers, also mentioning her own travels to Greece. RU describes the beginning of his international career in software engineering. TU expresses"
+    },
+    {
+      "index": 3,
+      "date": "2026-02-20",
+      "dialog_id": "ai_notes_58952496_142756584_2026-02-20",
+      "status": 500,
+      "error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)"
+    },
+    {
+      "index": 4,
+      "date": "2026-02-21",
+      "dialog_id": "ai_notes_99906416_150420471_2026-02-21",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 2962,
+      "summary": "The dialogue consists solely of multiple deleted messages from RU, with no messages from TU."
+    },
+    {
+      "index": 5,
+      "date": "2026-02-22",
+      "dialog_id": "ai_notes_65906690_150830854_2026-02-22",
+      "status": 500,
+      "error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)"
+    },
+    {
+      "index": 6,
+      "date": "2026-02-23",
+      "dialog_id": "ai_notes_145606553_151033530_2026-02-23",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 5905,
+      "summary": "TU initiated a conversation with RU, who provided a private email address but agreed to continue on the current platform, expressing concern about losing TU due to potential credit expiration. TU expressed a desire to know RU better, and RU inquired about TU's interest in a full-time relationship, noting a potential age difference but stating it was unimportant. TU confirmed seeking a serious relationship. RU then shared their birthdate as January 5, 1962, making them 64, and expressed a wish to live with TU, praising TU's physical appearance and expressing affection"
+    }
+  ]
+}

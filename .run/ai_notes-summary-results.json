@@ -1,0 +1,91 @@
+{
+  "health": {
+    "status": "ok",
+    "provider": "gemini"
+  },
+  "totalDialogs": 7,
+  "results": [
+    {
+      "index": 0,
+      "date": "2026-02-17",
+      "ladyId": "126820315",
+      "manId": "140678702",
+      "dialog_id": "ai_notes_126820315_140678702_2026-02-17",
+      "mode": "segment-mild",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 17118,
+      "summary": "TU and RU exchanged morning greetings, with TU expressing strong desire and recalling a previous intimate encounter. Their plans to meet were initially delayed as RU needed to collect a laptop. TU suggested a quick intimate"
+    },
+    {
+      "index": 1,
+      "date": "2026-02-19",
+      "ladyId": "33205326",
+      "manId": "139167427",
+      "dialog_id": "ai_notes_33205326_139167427_2026-02-19",
+      "mode": "segment-mild",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 6738,
+      "summary": "RU and TU engage in a series of intimate exchanges, expressing deep affection and desire for each other. RU promises to make TU happy and care for her and her daughter, which TU appreciates. They discuss future plans for meeting and physical intimacy, including various fantasies and preferences. RU inquires about TU's ex-husband and her social life, specifically asking if she communicates with other men on the platform, which TU denies, stating she only talks to him. TU shares intimate photos and describes various sexual fantasies, some of which she clarifies are unfulfilled. They also discuss past \"wild\" experiences. RU expresses that he is falling in love with TU, and they both affirm their mutual love and appreciation before"
+    },
+    {
+      "index": 2,
+      "date": "2026-02-19",
+      "ladyId": "126820315",
+      "manId": "140678702",
+      "dialog_id": "ai_notes_126820315_140678702_2026-02-19",
+      "mode": "segment-mild",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 5764,
+      "summary": "TU initiated the conversation with affectionate greetings and expressed a desire to spend time together, asking about RU's day. RU mentioned working on software licenses and then shared details about his childhood in"
+    },
+    {
+      "index": 3,
+      "date": "2026-02-20",
+      "ladyId": "58952496",
+      "manId": "142756584",
+      "dialog_id": "ai_notes_58952496_142756584_2026-02-20",
+      "mode": "strict-message-fallback",
+      "initial_error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)",
+      "status": 500,
+      "error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)"
+    },
+    {
+      "index": 4,
+      "date": "2026-02-21",
+      "ladyId": "99906416",
+      "manId": "150420471",
+      "dialog_id": "ai_notes_99906416_150420471_2026-02-21",
+      "mode": "segment-mild",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 1343,
+      "summary": "RU sent multiple messages, all of which were subsequently deleted."
+    },
+    {
+      "index": 5,
+      "date": "2026-02-22",
+      "ladyId": "65906690",
+      "manId": "150830854",
+      "dialog_id": "ai_notes_65906690_150830854_2026-02-22",
+      "mode": "strict-message-fallback",
+      "initial_error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)",
+      "status": 500,
+      "error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)"
+    },
+    {
+      "index": 6,
+      "date": "2026-02-23",
+      "ladyId": "145606553",
+      "manId": "151033530",
+      "dialog_id": "ai_notes_145606553_151033530_2026-02-23",
+      "mode": "segment-mild",
+      "status": 200,
+      "provider": "gemini",
+      "latency_ms": 5105,
+      "summary": "TU initiates a conversation with RU, who provides a private email address but agrees to continue talking on the current platform, expressing a desire not to lose TU. RU asks if TU is seeking a full-time relationship, noting a potential age difference, and reveals their age as 64, expressing a wish to live with TU and admiration for TU's physical appearance. TU reciprocates these sentiments and asks about RU's profession. RU then communicates specific expectations regarding TU's attire, including wearing micro mini dresses and skirts, being naked at home, and dressing in body-showing clothing. TU responds positively to these suggestions and asks RU for a picture."
+    }
+  ]
+}

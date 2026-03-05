@@ -1,0 +1,39 @@
+{
+  "health": {
+    "status": "ok",
+    "provider": "gemini"
+  },
+  "totalDialogs": 2,
+  "success": 0,
+  "failed": 2,
+  "sanitizeStats": [
+    {
+      "index": 3,
+      "date": "2026-02-20",
+      "totalMessages": 133,
+      "changedMessages": 14
+    },
+    {
+      "index": 5,
+      "date": "2026-02-22",
+      "totalMessages": 86,
+      "changedMessages": 33
+    }
+  ],
+  "results": [
+    {
+      "index": 3,
+      "date": "2026-02-20",
+      "dialog_id": "ai_notes_58952496_142756584_2026-02-20",
+      "status": 500,
+      "error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)"
+    },
+    {
+      "index": 5,
+      "date": "2026-02-22",
+      "dialog_id": "ai_notes_65906690_150830854_2026-02-22",
+      "status": 500,
+      "error": "Gemini returned no text (promptBlockReason=PROHIBITED_CONTENT)"
+    }
+  ]
+}
