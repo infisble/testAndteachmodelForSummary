@@ -51,6 +51,47 @@ type SummaryItem = {
     thoughts_tokens: number;
     total_tokens: number;
   } | null;
+  evaluation?: Evaluation | null;
+};
+
+type Evaluation = {
+  source: {
+    message_count: number;
+    participant_count: number;
+    day_count: number;
+    source_words: number;
+    source_chars: number;
+    average_message_words: number;
+    duration_minutes: number;
+    estimated_reading_minutes: number;
+  };
+  summary: {
+    words: number;
+    chars: number;
+    compression_ratio: number;
+    keyword_coverage: number;
+    estimated_time_saved_minutes: number;
+  };
+  quality: {
+    score: number;
+    gates: Array<{
+      id: string;
+      label: string;
+      status: 'pass' | 'warn';
+      detail: string;
+    }>;
+  };
+};
+
+type RunHistoryItem = {
+  id: string;
+  dialog_id: string;
+  day: string;
+  provider: string;
+  model_name: string;
+  latency_ms: number;
+  quality_score: number;
+  time_saved_minutes: number;
 };
 
 function extractDay(timestamp: string): string | null {
@@ -84,6 +125,7 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string>(ALL_DAYS);
   const [summaries, setSummaries] = useState<Record<string, SummaryItem>>({});
+  const [runHistory, setRunHistory] = useState<RunHistoryItem[]>([]);
   const [promptText, setPromptText] = useState(() => JSON.stringify(defaultPrompt, null, 2));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -160,6 +202,7 @@ export default function App() {
       setDialogs(payload.dialogs || []);
       setSelectedId(payload.dialogs?.[0]?.dialog_id || null);
       setSummaries({});
+      setRunHistory([]);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -221,6 +264,19 @@ export default function App() {
           model_name: selectedModelName
         }
       }));
+      setRunHistory((prev) => [
+        {
+          id: `${selectedDialog.dialog_id}-${Date.now()}`,
+          dialog_id: selectedDialog.dialog_id,
+          day: selectedDay,
+          provider: result.provider,
+          model_name: selectedModelName,
+          latency_ms: result.latency_ms,
+          quality_score: result.evaluation?.quality?.score ?? 0,
+          time_saved_minutes: result.evaluation?.summary?.estimated_time_saved_minutes ?? 0
+        },
+        ...prev
+      ].slice(0, 20));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -229,12 +285,52 @@ export default function App() {
   };
 
   const selectedSummary = selectedDialog ? summaries[selectedDialog.dialog_id] : null;
+  const portfolioStats = useMemo(() => {
+    const totalMessages = dialogs.reduce((sum, dialog) => sum + dialog.messages.length, 0);
+    const completed = Object.values(summaries).filter((item) => item.summary);
+    const totalSaved = completed.reduce(
+      (sum, item) => sum + (item.evaluation?.summary?.estimated_time_saved_minutes || 0),
+      0
+    );
+    const avgQuality = completed.length
+      ? Math.round(completed.reduce((sum, item) => sum + (item.evaluation?.quality?.score || 0), 0) / completed.length)
+      : 0;
+    const avgLatency = completed.length
+      ? Math.round(completed.reduce((sum, item) => sum + item.latency_ms, 0) / completed.length)
+      : 0;
+
+    return {
+      totalDialogs: dialogs.length,
+      totalMessages,
+      completed: completed.length,
+      totalSaved,
+      avgQuality,
+      avgLatency
+    };
+  }, [dialogs, summaries]);
+
   const summaryStats = useMemo(() => {
     if (!selectedSummary?.summary) return null;
     const text = selectedSummary.summary.trim();
     const wordCount = text ? text.split(/\s+/).length : 0;
     return { wordCount, charCount: text.length };
   }, [selectedSummary]);
+
+  const exportReport = () => {
+    const report = {
+      generated_at: new Date().toISOString(),
+      portfolio: portfolioStats,
+      runs: runHistory,
+      summaries
+    };
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'dialog-summary-report.json';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="page">
@@ -256,10 +352,40 @@ export default function App() {
           <button className="primary" onClick={runStart} disabled={busy || !selectedDialog || !filteredMessages.length}>
             {busy ? 'Running...' : 'Start'}
           </button>
+          <button className="secondary-action" onClick={exportReport} disabled={!runHistory.length}>
+            Export report
+          </button>
         </div>
       </header>
 
       <main className="grid">
+        <section className="panel wide metrics-panel">
+          <div className="metric-card">
+            <span>Dialogs</span>
+            <strong>{portfolioStats.totalDialogs}</strong>
+          </div>
+          <div className="metric-card">
+            <span>Messages</span>
+            <strong>{portfolioStats.totalMessages}</strong>
+          </div>
+          <div className="metric-card">
+            <span>Summarized</span>
+            <strong>{portfolioStats.completed}</strong>
+          </div>
+          <div className="metric-card">
+            <span>Quality</span>
+            <strong>{portfolioStats.avgQuality}%</strong>
+          </div>
+          <div className="metric-card">
+            <span>Time saved</span>
+            <strong>{portfolioStats.totalSaved.toFixed(1)}m</strong>
+          </div>
+          <div className="metric-card">
+            <span>Avg latency</span>
+            <strong>{portfolioStats.avgLatency}ms</strong>
+          </div>
+        </section>
+
         <section className="panel">
           <h2>Prompt</h2>
           <textarea
@@ -401,10 +527,60 @@ export default function App() {
                   <span>Words: {summaryStats.wordCount} | Chars: {summaryStats.charCount}</span>
                 )}
               </div>
+              {selectedSummary.evaluation && (
+                <div className="quality-grid">
+                  <div className="quality-score">
+                    <span>Quality</span>
+                    <strong>{selectedSummary.evaluation.quality.score}%</strong>
+                  </div>
+                  <div className="quality-facts">
+                    <span>Compression {(selectedSummary.evaluation.summary.compression_ratio * 100).toFixed(1)}%</span>
+                    <span>Coverage {(selectedSummary.evaluation.summary.keyword_coverage * 100).toFixed(0)}%</span>
+                    <span>Saved {selectedSummary.evaluation.summary.estimated_time_saved_minutes.toFixed(1)} min</span>
+                  </div>
+                  <div className="gates">
+                    {selectedSummary.evaluation.quality.gates.map((gate) => (
+                      <span key={gate.id} className={`gate ${gate.status}`}>
+                        {gate.label}: {gate.detail}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
               <p>{selectedSummary.summary}</p>
             </div>
           ) : (
             <p className="placeholder">Choose day and press Start.</p>
+          )}
+        </section>
+
+        <section className="panel wide">
+          <h2>Run History</h2>
+          {runHistory.length ? (
+            <div className="history-table">
+              <div className="history-head">
+                <div>Dialog</div>
+                <div>Day</div>
+                <div>Provider</div>
+                <div>Model</div>
+                <div>Quality</div>
+                <div>Saved</div>
+                <div>Latency</div>
+              </div>
+              {runHistory.map((run) => (
+                <div className="history-row" key={run.id}>
+                  <div>{run.dialog_id}</div>
+                  <div>{run.day === ALL_DAYS ? 'All' : formatDay(run.day)}</div>
+                  <div>{run.provider}</div>
+                  <div>{run.model_name}</div>
+                  <div>{run.quality_score}%</div>
+                  <div>{run.time_saved_minutes.toFixed(1)}m</div>
+                  <div>{run.latency_ms}ms</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="placeholder">Runs will appear here after the first summary.</p>
           )}
         </section>
       </main>

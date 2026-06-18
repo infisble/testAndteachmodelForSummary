@@ -19,6 +19,9 @@ up the whole system with one command.
   and consecutive-message merging.
 - Runs summaries through `mock`, direct Gemini API, or Vertex AI endpoint providers.
 - Captures latency and Gemini token usage in the UI.
+- Calculates deterministic impact metrics: compression ratio, keyword coverage,
+  estimated reading time saved, and quality gates.
+- Keeps a browser-side run history and exports a JSON evaluation report.
 - Supports batch summarization from the backend API.
 - Includes Gemini rate-limit probes for capacity and retry tuning.
 
@@ -32,6 +35,10 @@ calls:
 - Prompt changes are testable without redeploying backend code.
 - Model, temperature, and output-token settings are visible at run time.
 - Long dialogs are made safer for LLM limits through deterministic compaction.
+- Each run produces an auditable quality score instead of relying on a subjective
+  "looks good" review.
+- Exported reports make the project usable for model bake-offs and stakeholder
+  demos.
 - Rate-limit scripts make provider limits measurable before production rollout.
 - Token and latency metrics help compare quality/cost tradeoffs across models.
 
@@ -52,7 +59,8 @@ flowchart LR
   G --> O[Summary + latency + token usage]
   V --> O[Summary + latency]
   M --> O
-  O --> F
+  O --> A[Deterministic evaluation]
+  A --> F
 ```
 
 ```mermaid
@@ -62,6 +70,7 @@ sequenceDiagram
   participant API as Express API
   participant Parser as parsing.js
   participant Prompt as prompting.js
+  participant Eval as analytics.js
   participant LLM as Gemini/Vertex
 
   Operator->>UI: Upload dialog JSON
@@ -74,7 +83,9 @@ sequenceDiagram
   API->>Prompt: buildPrompt(dialog, promptConfig)
   API->>LLM: generateContent or predict
   LLM-->>API: summary and usage metadata
-  API-->>UI: summary, provider, latency_ms, usage
+  API->>Eval: evaluateSummary(dialog, summary, usage)
+  Eval-->>API: quality score and impact metrics
+  API-->>UI: summary, latency, usage, evaluation
 ```
 
 More details: [docs/architecture.md](docs/architecture.md).
@@ -156,6 +167,12 @@ Returns service status and active default provider.
 
 Returns supported providers, limits, and feature capabilities for UI or automation.
 
+### `POST /api/analyze`
+
+Returns deterministic source metrics for one dialog or a list of dialogs. This is
+useful for checking volume, duration, participant count, and expected reading time
+before any model call.
+
 ### `POST /api/parse`
 
 Accepts multipart form data with a `file` field containing JSON. Returns normalized
@@ -216,6 +233,16 @@ Response:
     "output_tokens": 23,
     "thoughts_tokens": 0,
     "total_tokens": 151
+  },
+  "evaluation": {
+    "summary": {
+      "compression_ratio": 0.18,
+      "keyword_coverage": 0.42,
+      "estimated_time_saved_minutes": 3.6
+    },
+    "quality": {
+      "score": 80
+    }
   }
 }
 ```
@@ -281,6 +308,7 @@ backend/
     server.js      Express API and request orchestration
     parsing.js     Input JSON normalization
     prompting.js   Prompt construction and compaction
+    analytics.js   Deterministic source, impact, and quality metrics
     gemini.js      Gemini client, retries, usage parsing
     vertex.js      Vertex Endpoint adapter
     logging.js     Redacted structured log helpers
@@ -313,6 +341,7 @@ npm run build
 
 ```bash
 node -c backend/src/server.js
+node -c backend/src/analytics.js
 node -c backend/src/gemini.js
 node -c backend/src/parsing.js
 node -c backend/src/prompting.js

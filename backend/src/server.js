@@ -7,6 +7,7 @@ const multer = require("multer");
 const { settings, parseJsonTemplate } = require("./config");
 const { loadDialogs } = require("./parsing");
 const { buildPrompt } = require("./prompting");
+const { analyzeDialog, evaluateSummary } = require("./analytics");
 const { GeminiClient } = require("./gemini");
 const { VertexClient } = require("./vertex");
 const { toLogJson } = require("./logging");
@@ -59,10 +60,26 @@ app.get("/api/meta", (req, res) => {
       "single_dialog_summarization",
       "batch_summarization",
       "gemini_usage_metrics",
+      "dialog_analytics",
+      "summary_quality_gates",
+      "estimated_review_time_saved",
       "rate_limit_retry_and_prompt_shrink"
     ]
   });
 });
+
+app.post("/api/analyze", asyncHandler(async (req, res) => {
+  const request = req.body || {};
+  if (Array.isArray(request.dialogs)) {
+    return res.json({
+      items: request.dialogs.map((dialog) => ({
+        dialog_id: dialog?.dialog_id,
+        analysis: analyzeDialog(dialog)
+      }))
+    });
+  }
+  res.json({ analysis: analyzeDialog(request.dialog || request) });
+}));
 
 app.post("/api/parse", upload.single("file"), asyncHandler(async (req, res) => {
   if (!req.file) {
@@ -104,8 +121,10 @@ app.post("/api/summarize", asyncHandler(async (req, res) => {
         output_tokens: 0,
         thoughts_tokens: 0,
         total_tokens: 0
-      }
+      },
+      evaluation: null
     };
+    response.evaluation = evaluateSummary(dialog, response.summary, response.usage, response.latency_ms);
     console.info(
       "MODEL RESPONSE id=%s provider=%s latency_ms=%s payload=%s",
       requestId,
@@ -137,7 +156,8 @@ app.post("/api/summarize", asyncHandler(async (req, res) => {
       summary,
       latency_ms: latencyMs,
       provider,
-      usage
+      usage,
+      evaluation: evaluateSummary(dialog, summary, usage, latencyMs)
     };
     console.info(
       "MODEL RESPONSE id=%s provider=%s latency_ms=%s payload=%s",
@@ -188,7 +208,8 @@ app.post("/api/summarize-batch", asyncHandler(async (req, res) => {
       summary,
       latency_ms: latencyMs,
       provider,
-      usage
+      usage,
+      evaluation: evaluateSummary(dialog, summary, usage, latencyMs)
     });
   }
 

@@ -19,6 +19,7 @@ flowchart TB
     API[Express server]
     Parser[parsing.js]
     Prompt[prompting.js]
+    Analytics[analytics.js]
     Logger[logging.js]
     Gemini[gemini.js]
     Vertex[vertex.js]
@@ -35,6 +36,7 @@ flowchart TB
   UI --> API
   API --> Parser
   API --> Prompt
+  API --> Analytics
   API --> Logger
   API --> Gemini
   API --> Vertex
@@ -62,9 +64,10 @@ flowchart TD
   L -->|vertex| O[predict endpoint]
   N --> P[Extract text and usage]
   O --> Q[Extract prediction text]
-  M --> R[Return API response]
+  M --> R[Evaluate summary]
   P --> R
   Q --> R
+  R --> S[Return API response]
 ```
 
 ## Provider Strategy
@@ -80,6 +83,22 @@ Provider-specific logic lives behind `GeminiClient.generate()` and
 `VertexClient.predict()`. The API route receives the same high-level tuple from
 both real providers: summary text and latency; Gemini additionally returns token
 usage metadata.
+
+## Evaluation Layer
+
+`analytics.js` is deliberately deterministic. It does not ask a model to judge
+another model. Instead, it calculates repeatable signals that are useful for
+model comparison and product demos:
+
+- Source volume: messages, participants, words, characters, days, duration.
+- Summary compactness: words, characters, compression ratio.
+- Retrieval signal: overlap against top source keywords.
+- Impact estimate: reading minutes saved at 220 words per minute.
+- Quality gates: concise output, substantive output, keyword coverage, latency,
+  and token budget when usage metadata is available.
+
+This makes every run auditable and keeps the evaluation layer cheap enough to run
+for mock, Gemini, and Vertex providers.
 
 ## Reliability Controls
 
@@ -135,6 +154,24 @@ lines are retained first because they usually contain the actionable context.
     "output_tokens": 23,
     "thoughts_tokens": 0,
     "total_tokens": 151
+  },
+  "evaluation": {
+    "summary": {
+      "compression_ratio": 0.18,
+      "keyword_coverage": 0.42,
+      "estimated_time_saved_minutes": 3.6
+    },
+    "quality": {
+      "score": 80,
+      "gates": [
+        {
+          "id": "concise",
+          "label": "Concise output",
+          "status": "pass",
+          "detail": "summary/source word ratio 0.18"
+        }
+      ]
+    }
   }
 }
 ```
@@ -146,3 +183,4 @@ lines are retained first because they usually contain the actionable context.
 - Provider secrets remain backend-only.
 - Prompt budgets and output token caps are controlled by environment variables.
 - Model capacity tests live outside the product path in `tools/`.
+- Evaluation metrics are deterministic, cheap, and provider-agnostic.
