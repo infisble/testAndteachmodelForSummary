@@ -1,158 +1,223 @@
-# Enterprise RAG Assistant
+# Dialog Summary Studio
 
-Enterprise RAG Assistant is a full-stack reference implementation for secure
-document question answering. It accepts PDF, DOCX, and TXT files, chunks and
-embeds the extracted text, stores vectors in Qdrant, persists metadata and access
-rules in PostgreSQL, and answers chat questions with source citations.
+Dialog Summary Studio is a full-stack tool for testing how LLM providers summarize
+messenger-style dialogs. It turns raw JSON exports into normalized conversations,
+lets an operator tune prompts and model parameters, and records latency/token usage
+for every summary run.
 
-The code is intentionally structured like a production service rather than a
-single-file demo: FastAPI routes are thin, business logic lives in services,
-database access lives in repositories, and configuration is environment-driven.
+The project is intentionally small enough to run locally, but structured like a
+production evaluation surface: provider adapters are isolated, prompt construction
+is deterministic, secrets stay in environment variables, and Docker Compose brings
+up the whole system with one command.
 
-## Capabilities
+## What It Does
 
-- FastAPI backend with typed Pydantic request/response schemas.
-- PostgreSQL metadata store with Alembic migrations.
-- Qdrant vector database for semantic retrieval.
-- OpenAI and Gemini provider adapters, plus a local mock mode for development.
-- PDF, DOCX, and TXT ingestion.
-- Text chunking with overlap and deterministic fallback embeddings.
-- `/api/chat` endpoint returning an answer and citations.
-- JWT authentication with `admin`, `manager`, and `employee` roles.
-- Document visibility: `private`, `team`, and `public`.
-- React/Vite frontend for login, upload, document browsing, and chat.
-- Docker Compose for the full local stack.
+- Uploads a JSON dialog export from the browser.
+- Normalizes multiple input shapes into a consistent `dialog -> messages` model.
+- Filters a dialog by day before summarization, useful for long conversations.
+- Builds compact prompts with sender normalization, URL masking, message truncation,
+  and consecutive-message merging.
+- Runs summaries through `mock`, direct Gemini API, or Vertex AI endpoint providers.
+- Captures latency and Gemini token usage in the UI.
+- Calculates deterministic impact metrics: compression ratio, keyword coverage,
+  estimated reading time saved, and quality gates.
+- Keeps a browser-side run history and exports a JSON evaluation report.
+- Supports batch summarization from the backend API.
+- Includes Gemini rate-limit probes for capacity and retry tuning.
+
+## Impact
+
+This project reduces manual dialog review work by converting long support or
+community conversations into compact, auditable summaries. The useful engineering
+impact is not only "LLM calls from a UI"; it is the evaluation loop around those
+calls:
+
+- Prompt changes are testable without redeploying backend code.
+- Model, temperature, and output-token settings are visible at run time.
+- Long dialogs are made safer for LLM limits through deterministic compaction.
+- Each run produces an auditable quality score instead of relying on a subjective
+  "looks good" review.
+- Exported reports make the project usable for model bake-offs and stakeholder
+  demos.
+- Rate-limit scripts make provider limits measurable before production rollout.
+- Token and latency metrics help compare quality/cost tradeoffs across models.
 
 ## Architecture
 
-```text
-backend/
-  app/
-    api/            FastAPI routers and dependencies
-    core/           config, logging, security
-    db/             SQLAlchemy engine and ORM models
-    repositories/   persistence queries and access scopes
-    schemas/        Pydantic API contracts
-    services/       ingestion, embeddings, vector search, RAG, auth
-    workers/        reserved for async ingestion extensions
-    tests/          unit tests for pure logic and access rules
-  migrations/       Alembic migration history
-frontend/
-  src/              React console
-docs/               architecture, API, security, operations
-docker-compose.yml  Postgres, Qdrant, backend, frontend
+```mermaid
+flowchart LR
+  U[Operator] --> F[React + Vite UI]
+  F -->|multipart JSON| P[POST /api/parse]
+  P --> N[Dialog normalizer]
+  N --> F
+  F -->|dialog + prompt + model config| S[POST /api/summarize]
+  S --> B[Prompt builder]
+  B --> R{Provider}
+  R -->|mock| M[Static local response]
+  R -->|gemini| G[Gemini generateContent]
+  R -->|vertex| V[Vertex AI predict]
+  G --> O[Summary + latency + token usage]
+  V --> O[Summary + latency]
+  M --> O
+  O --> A[Deterministic evaluation]
+  A --> F
 ```
-
-High-level flow:
 
 ```mermaid
 sequenceDiagram
-  actor User
+  actor Operator
   participant UI as React UI
-  participant API as FastAPI
-  participant PG as PostgreSQL
-  participant Q as Qdrant
-  participant LLM as OpenAI/Gemini
+  participant API as Express API
+  participant Parser as parsing.js
+  participant Prompt as prompting.js
+  participant Eval as analytics.js
+  participant LLM as Gemini/Vertex
 
-  User->>UI: Upload PDF/DOCX/TXT
-  UI->>API: POST /api/documents
-  API->>API: Parse and chunk text
-  API->>LLM: Create embeddings
-  API->>PG: Save document/chunk metadata and visibility
-  API->>Q: Upsert vectors
-  User->>UI: Ask question
-  UI->>API: POST /api/chat
-  API->>Q: Vector search
-  API->>PG: Filter chunks by RBAC and visibility
-  API->>LLM: Answer from retrieved context
-  API-->>UI: Answer with citations
+  Operator->>UI: Upload dialog JSON
+  UI->>API: POST /api/parse
+  API->>Parser: loadDialogs(payload)
+  Parser-->>API: normalized dialogs
+  API-->>UI: dialogs[]
+  Operator->>UI: Pick day, provider, model, prompt
+  UI->>API: POST /api/summarize
+  API->>Prompt: buildPrompt(dialog, promptConfig)
+  API->>LLM: generateContent or predict
+  LLM-->>API: summary and usage metadata
+  API->>Eval: evaluateSummary(dialog, summary, usage)
+  Eval-->>API: quality score and impact metrics
+  API-->>UI: summary, latency, usage, evaluation
 ```
+
+More details: [docs/architecture.md](docs/architecture.md).
+
+## Tech Stack
+
+- Frontend: React 18, TypeScript, Vite, nginx container
+- Backend: Node.js, Express, Multer, Google Auth Library
+- Model providers: mock, Gemini API, Vertex AI Endpoint
+- Deployment: Docker Compose
+- Tooling: standalone Node.js scripts for Gemini rate-limit tests
 
 ## Quick Start
 
+1. Create `.env` from the example:
+
 ```bash
 cp .env.example .env
+```
+
+2. Start the project:
+
+```bash
 docker compose up --build
 ```
 
-Open:
+3. Open:
 
 - Frontend: `http://localhost:5173`
-- Backend OpenAPI: `http://localhost:8000/docs`
 - Backend health: `http://localhost:8000/api/health`
-- Qdrant dashboard/API: `http://localhost:6333/dashboard`
+- Backend metadata: `http://localhost:8000/api/meta`
 
-The default `RAG_LLM_PROVIDER=mock` works without cloud credentials. Configure
-OpenAI or Gemini in `.env` when you want production LLM responses and provider
-embeddings.
+4. Upload [samples/dialogs.json](samples/dialogs.json), select a dialog/day, tune the
+prompt, and press `Start`.
 
-## First User Bootstrap
+The default provider is `mock`, so the app works without cloud credentials.
 
-The first registered user becomes `admin`. Later users are created as
-`employee`. Admins can update users through:
+## Gemini Mode
 
-```http
-PATCH /api/auth/users/{user_id}
-Authorization: Bearer <admin-token>
-Content-Type: application/json
+Set these values in `.env`:
 
+```env
+BESCO_MODEL_PROVIDER=gemini
+VITE_MODEL_PROVIDER=gemini
+BESCO_GEMINI_API_KEY=your-gemini-api-key
+BESCO_GEMINI_MODEL=gemini-2.5-flash
+BESCO_GEMINI_API_BASE=https://generativelanguage.googleapis.com
+BESCO_GEMINI_API_VERSION=v1beta
+```
+
+The backend also supports OAuth access tokens and Vertex-style Gemini endpoints
+through `BESCO_GEMINI_ACCESS_TOKEN`, `BESCO_GEMINI_API_BASE`, and
+`BESCO_GEMINI_API_VERSION`.
+
+## Vertex Endpoint Mode
+
+```env
+BESCO_MODEL_PROVIDER=vertex
+VITE_MODEL_PROVIDER=vertex
+BESCO_VERTEX_PROJECT_ID=your-project-id
+BESCO_VERTEX_LOCATION=us-central1
+BESCO_VERTEX_ENDPOINT_ID=your-endpoint-id
+```
+
+Optional templates:
+
+```env
+BESCO_VERTEX_INSTANCE_TEMPLATE={"prompt":"{prompt}"}
+BESCO_VERTEX_PARAMETERS_TEMPLATE={"temperature":0.2,"maxOutputTokens":512}
+```
+
+## API
+
+### `GET /api/health`
+
+Returns service status and active default provider.
+
+### `GET /api/meta`
+
+Returns supported providers, limits, and feature capabilities for UI or automation.
+
+### `POST /api/analyze`
+
+Returns deterministic source metrics for one dialog or a list of dialogs. This is
+useful for checking volume, duration, participant count, and expected reading time
+before any model call.
+
+### `POST /api/parse`
+
+Accepts multipart form data with a `file` field containing JSON. Returns normalized
+dialogs:
+
+```json
 {
-  "role": "manager",
-  "team_name": "Finance"
+  "dialogs": [
+    {
+      "dialog_id": "101_202_0",
+      "ru_name": "Regional User",
+      "tu_name": "Target User",
+      "messages": [
+        { "sender": "RU", "timestamp": "2026-06-18 09:15", "text": "..." }
+      ]
+    }
+  ]
 }
 ```
 
-## API Overview
+### `POST /api/summarize`
 
-### Register
-
-```http
-POST /api/auth/register
-Content-Type: application/json
-
+```json
 {
-  "email": "admin@example.com",
-  "password": "ChangeMe123!",
-  "full_name": "Admin User",
-  "team_name": "HR"
-}
-```
-
-### Login
-
-```http
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "email": "admin@example.com",
-  "password": "ChangeMe123!"
-}
-```
-
-### Upload Document
-
-```http
-POST /api/documents
-Authorization: Bearer <token>
-Content-Type: multipart/form-data
-
-file=<pdf/docx/txt>
-title=Employee Handbook
-visibility=team
-team_id=1
-```
-
-### Chat
-
-```http
-POST /api/chat
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "question": "What is the vacation policy?",
-  "top_k": 5
+  "dialog": {
+    "dialog_id": "101_202_0",
+    "messages": [
+      { "sender": "RU", "timestamp": "2026-06-18 09:15", "text": "Can we sync today?" }
+    ]
+  },
+  "prompt": {
+    "system_instruction": "You summarize dialogs in clear English.",
+    "rules": ["Use only details present in the dialog."],
+    "output_instruction": "Return exactly one paragraph.",
+    "max_message_chars": 700,
+    "max_merged_line_chars": 900
+  },
+  "parameters": {
+    "temperature": 0.2,
+    "maxOutputTokens": 300
+  },
+  "model": {
+    "provider": "gemini",
+    "model_name": "gemini-2.5-flash"
+  }
 }
 ```
 
@@ -160,80 +225,132 @@ Response:
 
 ```json
 {
-  "answer": "Employees can request vacation according to the policy [1].",
-  "provider": "openai",
-  "citations": [
-    {
-      "document_id": 1,
-      "document_title": "Employee Handbook",
-      "chunk_id": 12,
-      "chunk_index": 3,
-      "score": 0.82,
-      "text": "..."
+  "summary": "The participants agreed to sync today and confirm final details.",
+  "latency_ms": 842,
+  "provider": "gemini",
+  "usage": {
+    "prompt_tokens": 128,
+    "output_tokens": 23,
+    "thoughts_tokens": 0,
+    "total_tokens": 151
+  },
+  "evaluation": {
+    "summary": {
+      "compression_ratio": 0.18,
+      "keyword_coverage": 0.42,
+      "estimated_time_saved_minutes": 3.6
+    },
+    "quality": {
+      "score": 80
     }
-  ]
+  }
 }
 ```
 
-## Visibility Model
+### `POST /api/summarize-batch`
 
-- `private`: visible only to the document owner and admins.
-- `team`: visible to users in the same team and admins.
-- `public`: visible to all authenticated users.
+Accepts `dialogs[]` with the same `prompt`, `parameters`, and `model` shape, then
+returns `items[]` with one summary result per dialog.
 
-Employees may upload private/team documents. Publishing public documents is
-restricted to managers and admins.
+## Input JSON Formats
 
-## Configuration
+The parser accepts:
 
-Important environment variables:
+- A single object with `messages`.
+- An object with `dialogs`.
+- An object with `data`.
+- A raw array of dialog objects.
+- A raw array of message-like objects.
+
+Message text can live in `text`, `message`, `content`, `body`, `caption`, or nested
+objects. Sender fields include `from`, `sender`, `from_id`, `author`, and
+`initiator`. Timestamp fields include `timestamp`, `date`, `datetime`, `time`,
+`created_at`, `createdAt`, and `ts`.
+
+## Operational Controls
+
+Gemini reliability and cost controls are environment-driven:
 
 ```env
-RAG_API_SECRET_KEY=replace-with-a-long-random-secret
-RAG_DATABASE_URL=postgresql+psycopg2://rag:rag@postgres:5432/rag
-RAG_QDRANT_URL=http://qdrant:6333
-RAG_LLM_PROVIDER=mock
-OPENAI_API_KEY=
-GEMINI_API_KEY=
+BESCO_GEMINI_RETRY_MAX_ATTEMPTS=2
+BESCO_GEMINI_RETRY_BASE_DELAY_MS=1500
+BESCO_GEMINI_RETRY_MAX_DELAY_MS=12000
+BESCO_GEMINI_PROMPT_CHAR_BUDGETS=16000,12000,8000
+BESCO_GEMINI_INITIAL_PROMPT_CHAR_BUDGET=16000
+BESCO_GEMINI_THINKING_BUDGET=0
+BESCO_GEMINI_THINKING_BUDGET_CAP=512
+BESCO_GEMINI_DEFAULT_MAX_OUTPUT_TOKENS=300
+BESCO_GEMINI_MAX_OUTPUT_TOKENS_CAP=512
 ```
 
-See [.env.example](.env.example) for the complete configuration surface.
+## Rate-Limit Tools
 
-## Development
-
-Backend:
+Run a fixed-size concurrent Gemini batch:
 
 ```bash
-cd backend
-pip install -r requirements.txt
-pytest app/tests
+node tools/gemini-batch-test.js 100
 ```
 
-Frontend:
+Run progressive waves until the first configured 429 threshold:
+
+```bash
+node tools/gemini-rate-limit-test.js
+```
+
+Both scripts read `.env` and print status counts, latency stats, and first 429
+details when rate limits are reached.
+
+## Project Structure
+
+```text
+backend/
+  src/
+    server.js      Express API and request orchestration
+    parsing.js     Input JSON normalization
+    prompting.js   Prompt construction and compaction
+    analytics.js   Deterministic source, impact, and quality metrics
+    gemini.js      Gemini client, retries, usage parsing
+    vertex.js      Vertex Endpoint adapter
+    logging.js     Redacted structured log helpers
+frontend/
+  src/
+    App.tsx        Main evaluation UI
+    defaultPrompt.ts
+tools/
+  gemini-batch-test.js
+  gemini-rate-limit-test.js
+docs/
+  architecture.md
+samples/
+  dialogs.json
+```
+
+## Security Notes
+
+- Do not commit `.env`; use `.env.example` for configuration shape.
+- API keys and OAuth tokens are redacted from backend logs.
+- CORS origins are allow-listed with `BESCO_CORS_ORIGINS`.
+- Upload parsing uses in-memory files and a JSON-only application flow.
+
+## Development Checks
 
 ```bash
 cd frontend
-npm install
 npm run build
 ```
 
-Database migrations:
-
 ```bash
-cd backend
-alembic upgrade head
-alembic revision --autogenerate -m "describe change"
+node -c backend/src/server.js
+node -c backend/src/analytics.js
+node -c backend/src/gemini.js
+node -c backend/src/parsing.js
+node -c backend/src/prompting.js
+node -c backend/src/vertex.js
 ```
 
-## Production Notes
+## Roadmap
 
-- Replace `RAG_API_SECRET_KEY` before deployment.
-- Use managed Postgres with backups and point-in-time recovery.
-- Protect Qdrant with network policy or API keys; do not expose it publicly.
-- Keep `.env` out of git and rotate any leaked provider credentials.
-- For large deployments, move ingestion to `backend/app/workers` with a queue.
-- Add object storage for raw files if retention is required.
-- Add audit logs for admin role changes and document reads.
-
-More details are in [docs/architecture.md](docs/architecture.md),
-[docs/api.md](docs/api.md), and [docs/security.md](docs/security.md).
+- Persist evaluation runs and compare model versions over time.
+- Add golden-set scoring for summary quality.
+- Add role-based access and project/team workspaces.
+- Add streaming generation for long-running providers.
