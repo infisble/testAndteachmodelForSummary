@@ -40,6 +40,30 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", provider: settings.modelProvider });
 });
 
+app.get("/api/meta", (req, res) => {
+  res.json({
+    app_name: settings.appName,
+    default_provider: settings.modelProvider,
+    supported_providers: ["mock", "gemini", "vertex"],
+    default_model: settings.geminiModel,
+    limits: {
+      request_timeout_sec: settings.requestTimeoutSec,
+      prompt_char_budgets: settings.geminiPromptCharBudgets,
+      default_max_output_tokens: settings.geminiDefaultMaxOutputTokens,
+      max_output_tokens_cap: settings.geminiMaxOutputTokensCap
+    },
+    capabilities: [
+      "json_dialog_parsing",
+      "day_level_dialog_filtering",
+      "prompt_template_editing",
+      "single_dialog_summarization",
+      "batch_summarization",
+      "gemini_usage_metrics",
+      "rate_limit_retry_and_prompt_shrink"
+    ]
+  });
+});
+
 app.post("/api/parse", upload.single("file"), asyncHandler(async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ detail: "file is required" });
@@ -74,7 +98,13 @@ app.post("/api/summarize", asyncHandler(async (req, res) => {
     const response = {
       summary: mockSummary(prompt),
       latency_ms: 0,
-      provider: "mock"
+      provider: "mock",
+      usage: {
+        prompt_tokens: 0,
+        output_tokens: 0,
+        thoughts_tokens: 0,
+        total_tokens: 0
+      }
     };
     console.info(
       "MODEL RESPONSE id=%s provider=%s latency_ms=%s payload=%s",
@@ -90,18 +120,24 @@ app.post("/api/summarize", asyncHandler(async (req, res) => {
     return res.status(400).json({ detail: `Unsupported provider: ${provider}` });
   }
 
-  const overrides = buildOverrides(request);
+  const overrides = buildOverrides(request, provider);
 
   try {
-    const [summary, latencyMs] =
-      provider === "vertex"
-        ? await vertexClient.predict(prompt, overrides)
-        : await geminiClient.generate(prompt, overrides);
+    let summary = "";
+    let latencyMs = 0;
+    let usage = null;
+
+    if (provider === "vertex") {
+      [summary, latencyMs] = await vertexClient.predict(prompt, overrides);
+    } else {
+      [summary, latencyMs, usage] = await geminiClient.generate(prompt, overrides);
+    }
 
     const response = {
       summary,
       latency_ms: latencyMs,
-      provider
+      provider,
+      usage
     };
     console.info(
       "MODEL RESPONSE id=%s provider=%s latency_ms=%s payload=%s",
@@ -125,26 +161,34 @@ app.post("/api/summarize-batch", asyncHandler(async (req, res) => {
     return res.status(400).json({ detail: `Unsupported provider: ${provider}` });
   }
 
-  const overrides = buildOverrides(request);
+  const overrides = buildOverrides(request, provider);
   const items = [];
   for (const dialog of dialogs) {
     const prompt = buildPrompt(dialog, request.prompt || {});
     let summary = "";
     let latencyMs = 0;
+    let usage = null;
 
     if (provider === "mock") {
       summary = mockSummary(prompt);
+      usage = {
+        prompt_tokens: 0,
+        output_tokens: 0,
+        thoughts_tokens: 0,
+        total_tokens: 0
+      };
     } else if (provider === "vertex") {
       [summary, latencyMs] = await vertexClient.predict(prompt, overrides);
     } else {
-      [summary, latencyMs] = await geminiClient.generate(prompt, overrides);
+      [summary, latencyMs, usage] = await geminiClient.generate(prompt, overrides);
     }
 
     items.push({
       dialog_id: dialog.dialog_id,
       summary,
       latency_ms: latencyMs,
-      provider
+      provider,
+      usage
     });
   }
 
@@ -168,9 +212,10 @@ function mockSummary(_prompt) {
   return settings.mockReply;
 }
 
-function buildOverrides(request) {
+function buildOverrides(request, provider = "") {
   const overrides = {};
   const model = request?.model;
+  const providerName = String(provider || "").toLowerCase();
   if (model && typeof model === "object") {
     copyIfPresent(overrides, model, "api_key");
     copyIfPresent(overrides, model, "access_token");
@@ -185,10 +230,10 @@ function buildOverrides(request) {
   }
 
   if (request?.parameters && typeof request.parameters === "object" && !Array.isArray(request.parameters)) {
-    let base;
+    let base = {};
     if (model && model.parameters_template && typeof model.parameters_template === "object" && !Array.isArray(model.parameters_template)) {
       base = { ...model.parameters_template };
-    } else {
+    } else if (providerName === "vertex") {
       base = parseJsonTemplate(settings.vertexParametersTemplate, "BESCO_VERTEX_PARAMETERS_TEMPLATE");
     }
     overrides.parameters_template = {

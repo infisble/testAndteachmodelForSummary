@@ -17,7 +17,11 @@ class GeminiClient {
     const start = performance.now();
     const config = mergeOverrides(this.settings, overrides);
     const retryCfg = getRetryConfig(this.settings);
-    const promptCandidates = buildPromptCandidates(prompt, retryCfg.promptCharBudgets);
+    const promptCandidates = buildPromptCandidates(
+      prompt,
+      retryCfg.promptCharBudgets,
+      retryCfg.initialPromptCharBudget
+    );
 
     let lastError = null;
 
@@ -25,9 +29,9 @@ class GeminiClient {
       const promptText = promptCandidates[promptIndex];
       for (let attempt = 1; attempt <= retryCfg.maxAttempts; attempt += 1) {
         try {
-          const text = await generateOnce(this.settings, config, promptText);
+          const result = await generateOnce(this.settings, config, promptText);
           const latencyMs = Math.round(performance.now() - start);
-          return [text, latencyMs];
+          return [result.text, latencyMs, result.usage];
         } catch (error) {
           lastError = error;
           const canRetry = isRetriableError(error);
@@ -79,9 +83,7 @@ async function generateOnce(settings, config, promptText) {
       }
     ]
   };
-  if (config.parameters) {
-    payload.generationConfig = config.parameters;
-  }
+  payload.generationConfig = buildGenerationConfig(settings, config.parameters);
 
   const headers = {};
   const queryParams = new URLSearchParams();
@@ -126,7 +128,10 @@ async function generateOnce(settings, config, promptText) {
   if (!text) {
     throw new Error(describeEmptyTextResponse(body));
   }
-  return text;
+  return {
+    text,
+    usage: extractUsage(body)
+  };
 }
 
 function mergeOverrides(settings, overrides) {
@@ -163,6 +168,27 @@ function mergeOverrides(settings, overrides) {
     apiVersion,
     parameters
   };
+}
+
+function buildGenerationConfig(settings, parameters) {
+  const generationConfig = isObject(parameters) ? { ...parameters } : {};
+
+  const defaultThinkingBudget = clampPositiveInt(settings.geminiThinkingBudget, 0);
+  const thinkingBudgetCap = Math.max(0, clampPositiveInt(settings.geminiThinkingBudgetCap, 512));
+  const defaultMaxOutputTokens = Math.max(1, clampPositiveInt(settings.geminiDefaultMaxOutputTokens, 300));
+  const maxOutputTokensCap = Math.max(1, clampPositiveInt(settings.geminiMaxOutputTokensCap, 512));
+
+  const thinkingConfig = isObject(generationConfig.thinkingConfig)
+    ? { ...generationConfig.thinkingConfig }
+    : {};
+  const requestedThinkingBudget = clampPositiveInt(thinkingConfig.thinkingBudget, defaultThinkingBudget);
+  thinkingConfig.thinkingBudget = Math.min(Math.max(0, requestedThinkingBudget), thinkingBudgetCap);
+  generationConfig.thinkingConfig = thinkingConfig;
+
+  const requestedMaxOutputTokens = clampPositiveInt(generationConfig.maxOutputTokens, defaultMaxOutputTokens);
+  generationConfig.maxOutputTokens = Math.min(Math.max(1, requestedMaxOutputTokens), maxOutputTokensCap);
+
+  return generationConfig;
 }
 
 const MODEL_ALIASES = {
@@ -316,7 +342,8 @@ function getRetryConfig(settings) {
     maxAttempts: clampPositiveInt(settings.geminiRetryMaxAttempts, 3),
     baseDelayMs: clampPositiveInt(settings.geminiRetryBaseDelayMs, 1500),
     maxDelayMs: clampPositiveInt(settings.geminiRetryMaxDelayMs, 12000),
-    promptCharBudgets: parseCharBudgets(settings.geminiPromptCharBudgets)
+    promptCharBudgets: parseCharBudgets(settings.geminiPromptCharBudgets),
+    initialPromptCharBudget: clampPositiveInt(settings.geminiInitialPromptCharBudget, 0)
   };
 }
 
@@ -337,8 +364,13 @@ function parseCharBudgets(value) {
     .map((item) => Math.round(item));
 }
 
-function buildPromptCandidates(prompt, charBudgets) {
-  const variants = [prompt];
+function buildPromptCandidates(prompt, charBudgets, initialPromptCharBudget = 0) {
+  const firstVariant =
+    initialPromptCharBudget > 0
+      ? compactDialogPrompt(prompt, initialPromptCharBudget)
+      : prompt;
+
+  const variants = [firstVariant];
   for (const limit of charBudgets) {
     const compact = compactDialogPrompt(prompt, limit);
     if (compact && compact.length < variants[variants.length - 1].length) {
@@ -346,6 +378,21 @@ function buildPromptCandidates(prompt, charBudgets) {
     }
   }
   return variants;
+}
+
+function extractUsage(body) {
+  const usage = isObject(body?.usageMetadata) ? body.usageMetadata : {};
+  const promptTokens = clampPositiveInt(usage.promptTokenCount, 0);
+  const thoughtsTokens = clampPositiveInt(usage.thoughtsTokenCount, 0);
+  const candidatesTokens = clampPositiveInt(usage.candidatesTokenCount, 0);
+  const totalTokens = clampPositiveInt(usage.totalTokenCount, promptTokens + thoughtsTokens + candidatesTokens);
+
+  return {
+    prompt_tokens: promptTokens,
+    output_tokens: candidatesTokens,
+    thoughts_tokens: thoughtsTokens,
+    total_tokens: totalTokens
+  };
 }
 
 function compactDialogPrompt(prompt, maxDialogChars) {

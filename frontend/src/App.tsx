@@ -3,7 +3,13 @@ import { defaultPrompt } from './defaultPrompt';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+const DEFAULT_PROVIDER = import.meta.env.VITE_MODEL_PROVIDER || 'mock';
 const ALL_DAYS = '__all_days__';
+const PROVIDER_OPTIONS = [
+  { value: 'mock', label: 'Mock' },
+  { value: 'gemini', label: 'Gemini API' },
+  { value: 'vertex', label: 'Vertex AI Endpoint' }
+] as const;
 const MODEL_OPTIONS = [
   { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
   { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
@@ -30,6 +36,8 @@ type PromptConfig = {
   system_instruction: string;
   rules: string[];
   output_instruction: string;
+  max_message_chars?: number;
+  max_merged_line_chars?: number;
 };
 
 type SummaryItem = {
@@ -37,6 +45,12 @@ type SummaryItem = {
   latency_ms: number;
   provider: string;
   model_name: string;
+  usage?: {
+    prompt_tokens: number;
+    output_tokens: number;
+    thoughts_tokens: number;
+    total_tokens: number;
+  } | null;
 };
 
 function extractDay(timestamp: string): string | null {
@@ -75,7 +89,8 @@ export default function App() {
   const [busy, setBusy] = useState(false);
 
   const [temperature, setTemperature] = useState('0.2');
-  const [maxTokens, setMaxTokens] = useState('512');
+  const [maxTokens, setMaxTokens] = useState('300');
+  const [selectedProvider, setSelectedProvider] = useState<string>(DEFAULT_PROVIDER);
   const [selectedModelName, setSelectedModelName] = useState<string>(DEFAULT_GEMINI_MODEL);
 
   const selectedDialog = useMemo(
@@ -159,8 +174,18 @@ export default function App() {
 
   const buildParameters = () => {
     const params: Record<string, number> = {};
-    if (temperature.trim()) params.temperature = Number(temperature);
-    if (maxTokens.trim()) params.maxOutputTokens = Number(maxTokens);
+    if (temperature.trim()) {
+      const parsedTemperature = Number(temperature);
+      if (Number.isFinite(parsedTemperature)) {
+        params.temperature = Math.min(2, Math.max(0, parsedTemperature));
+      }
+    }
+    if (maxTokens.trim()) {
+      const parsedMaxTokens = Number(maxTokens);
+      if (Number.isFinite(parsedMaxTokens) && parsedMaxTokens > 0) {
+        params.maxOutputTokens = Math.min(512, Math.max(32, Math.round(parsedMaxTokens)));
+      }
+    }
     return params;
   };
 
@@ -178,7 +203,7 @@ export default function App() {
         dialog: { ...selectedDialog, messages: filteredMessages },
         prompt: parsePrompt(),
         parameters: buildParameters(),
-        model: { model_name: selectedModelName }
+        model: { provider: selectedProvider, model_name: selectedModelName }
       };
       const response = await fetch(`${API_BASE}/api/summarize`, {
         method: 'POST',
@@ -265,6 +290,16 @@ export default function App() {
             </select>
           </div>
           <div className="field">
+            <label>Provider</label>
+            <select value={selectedProvider} onChange={(event) => setSelectedProvider(event.target.value)}>
+              {PROVIDER_OPTIONS.map((provider) => (
+                <option key={provider.value} value={provider.value}>
+                  {provider.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
             <label>Model</label>
             <select value={selectedModelName} onChange={(event) => setSelectedModelName(event.target.value)}>
               {MODEL_OPTIONS.map((model) => (
@@ -281,7 +316,11 @@ export default function App() {
             </div>
             <div className="field">
               <label>Max tokens</label>
-              <input value={maxTokens} onChange={(event) => setMaxTokens(event.target.value)} />
+              <input
+                value={maxTokens}
+                inputMode="numeric"
+                onChange={(event) => setMaxTokens(event.target.value)}
+              />
             </div>
           </div>
         </section>
@@ -353,6 +392,11 @@ export default function App() {
                 <span>Provider: {selectedSummary.provider}</span>
                 <span>Model: {selectedSummary.model_name}</span>
                 <span>Latency: {selectedSummary.latency_ms} ms</span>
+                {selectedSummary.usage && (
+                  <span>
+                    Tokens P/O/Th/T: {selectedSummary.usage.prompt_tokens} / {selectedSummary.usage.output_tokens} / {selectedSummary.usage.thoughts_tokens} / {selectedSummary.usage.total_tokens}
+                  </span>
+                )}
                 {summaryStats && (
                   <span>Words: {summaryStats.wordCount} | Chars: {summaryStats.charCount}</span>
                 )}

@@ -1,0 +1,78 @@
+{
+  "dialogs": [
+    {
+      "context": {
+        "RU": {
+          "id": 101,
+          "name": "Regional Manager"
+        },
+        "TU": {
+          "id": 202,
+          "name": "Team Lead"
+        }
+      },
+      "messages": [
+        {
+          "from": "RU",
+          "timestamp": "2026-06-18 09:15",
+          "text": "Can you summarize yesterday's onboarding issues before our noon sync?"
+        },
+        {
+          "from": "TU",
+          "timestamp": "2026-06-18 09:19",
+          "text": "Yes. The main blocker was missing account access for three new users."
+        },
+        {
+          "from": "TU",
+          "timestamp": "2026-06-18 09:21",
+          "text": "I already asked IT to prioritize the access queue and shared the affected user list."
+        },
+        {
+          "from": "RU",
+          "timestamp": "2026-06-18 09:24",
+          "text": "Good. Please include the risk and the next owner in the summary."
+        },
+        {
+          "from": "TU",
+          "timestamp": "2026-06-18 09:30",
+          "text": "Risk is delayed training completion. Owner is IT for access and me for follow-up."
+        }
+      ]
+    },
+    {
+      "dialog_id": "partner_escalation_01",
+      "context": {
+        "RU": {
+          "id": 303,
+          "name": "Account Owner"
+        },
+        "TU": {
+          "id": 404,
+          "name": "Partner Success"
+        }
+      },
+      "messages": [
+        {
+          "sender": "RU",
+          "date": "2026-06-17 15:02",
+          "message": "The partner asked for a status update on the delayed export feature."
+        },
+        {
+          "sender": "TU",
+          "date": "2026-06-17 15:10",
+          "message": "Engineering confirmed the export fix is in QA. Expected release is tomorrow morning."
+        },
+        {
+          "sender": "RU",
+          "date": "2026-06-17 15:14",
+          "message": "Please draft a short response with timeline, owner, and mitigation."
+        },
+        {
+          "sender": "TU",
+          "date": "2026-06-17 15:28",
+          "message": "Draft is ready. Mitigation is a manual CSV export for urgent accounts."
+        }
+      ]
+    }
+  ]
+}
